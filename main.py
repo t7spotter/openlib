@@ -27,9 +27,10 @@ def title(title):
         info = {
             "1 title": ii.get("title", ""),
             "2 author": ii.get("author_name", ""),
-            "3 publisher": ii.get("publisher", ""),
-            "4 publish year": ii.get("publish_year", ""),
-            "5 ISBN": ii.get("isbn", ""),
+            "3 author_id": ii.get("author_key", ""),
+            "4 publisher": ii.get("publisher", ""),
+            "5 publish year": ii.get("publish_year", ""),
+            "6 ISBN": ii.get("isbn", ""),
         }
         result.append(info)
 
