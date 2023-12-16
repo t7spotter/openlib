@@ -37,5 +37,17 @@ def title(title):
     return result
 
 
+@app.route("/author/<author_id>")
+def author(author_id):
+    response = requests.get(f"https://openlibrary.org/authors/{author_id}.json").json()
+    result = {
+        "1 name": response.get("name", ""),
+        "2 birth date": response.get("birth_date", ""),
+        "3 bio": response.get("bio", ""),
+        "4 wikipedia": response.get("wikipedia", ""),
+    }
+    return result
+
+
 if __name__ == "__main__":
     app.run(debug=True)
