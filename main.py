@@ -1,13 +1,15 @@
 import requests
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from icecream import ic
 import http
 
 
 app = Flask(__name__)
 
+domain = "http://127.0.0.1:5000"
 
-@app.route("/")
+
+@app.route("/ok")
 def hello():
     return "Hello World!"
 
@@ -15,9 +17,9 @@ def hello():
 @app.route("/title/<title>")
 def title(title):
     parsed = title.replace("%20", "+")
-    response = requests.get(
-        f"https://openlibrary.org/search.json?title={parsed}"
-    ).json()
+    url = f"https://openlibrary.org/search.json?title={parsed}"
+    response = requests.get(url).json()
+
     b = []
     for i in response["docs"]:
         b.append(i)
@@ -39,7 +41,8 @@ def title(title):
 
 @app.route("/author/<author_id>")
 def author(author_id):
-    response = requests.get(f"https://openlibrary.org/authors/{author_id}.json").json()
+    url = f"https://openlibrary.org/authors/{author_id}.json"
+    response = requests.get(url).json()
     result = {
         "1 name": response.get("name", ""),
         "2 birth date": response.get("birth_date", ""),
@@ -49,20 +52,109 @@ def author(author_id):
     return result
 
 
+@app.route("/works/<path:next>")
+def works(next):
+    try:
+        offset = request.args.get("offset", 0)
+
+        url = f"https://openlibrary.org/{next}?offset={offset}"
+
+        response = requests.get(url).json()
+        works = response["entries"]
+
+        content = []
+        for i in works:
+            info = {
+                "1 title": i.get("title", ""),
+                "2 description": i.get("description", ""),
+                "3 key": i.get("key", ""),
+            }
+
+            content.append(info)
+
+        # region links
+        links = response.get("links", [])
+        links_dict = {
+            "self": links.get("self", ""),
+            "next": links.get("next", ""),
+            "prev": links.get("prev", ""),
+        }
+
+        next_with_localhost = f"{domain}/works{links_dict['next']}"
+        prev_with_localhost = f"{domain}/works{links_dict['prev']}"
+        self_with_localhost = f"{domain}/works{links_dict['self']}"
+
+        if links_dict["prev"] == "":
+            prev_with_localhost = ""
+
+        if links_dict["next"] == "":
+            next_with_localhost = ""
+
+        if links_dict["self"] == "":
+            self_with_localhost = ""
+        # endregion links
+
+        result = {
+            "1 links": {
+                "1 next": next_with_localhost,
+                "2 prev": prev_with_localhost,
+                "3 self": self_with_localhost,
+            },
+            "2 works": content,
+        }
+        # response.raise_for_status()
+
+        return result
+    except requests.exceptions.RequestException as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route("/authorworks/<author_id>")
 def author_works(author_id):
-    works = requests.get(f"https://openlibrary.org/authors/{author_id}/works.json").json()
-    links = dict(works.get("links", []))
+    url = f"https://openlibrary.org/authors/{author_id}/works.json"
+    response = requests.get(url).json()
+    works = response["entries"]
+
+    content = []
+    for i in works:
+        info = {
+            "1 title": i.get("title", ""),
+            "2 description": i.get("description", ""),
+            "3 key": i.get("key", ""),
+        }
+
+        content.append(info)
+
+    # region links
+    links = dict(response.get("links", []))
     links_dict = {
-        "author" : links.get("author", ''),
-        "next" : links.get("next", ''), # /authors/OL23919A/works.json?offset=50"
-        "prev" : links.get("prev", ''),
+        "self": links.get("self", ""),
+        "next": links.get("next", ""),
+        "prev": links.get("prev", ""),
     }
-    
-    next_with_localhost = f"https://openlibrary.org{links_dict['next']}"
-    
-    
-    return next_with_localhost
+
+    next_with_localhost = f"{domain}/works{links_dict['next']}"
+    prev_with_localhost = f"{domain}/works{links_dict['prev']}"
+    self_with_localhost = f"{domain}/works{links_dict['self']}"
+
+    if links_dict["prev"] == "":
+        prev_with_localhost = ""
+
+    if links_dict["next"] == "":
+        next_with_localhost = ""
+    # endregion links
+
+    result = {
+        "1 links": {
+            "1 next": next_with_localhost,
+            "2 prev": prev_with_localhost,
+            "3 self": self_with_localhost,
+        },
+        "2 works": content,
+    }
+
+    return result
+
 
 if __name__ == "__main__":
     app.run(debug=True)
