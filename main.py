@@ -156,5 +156,12 @@ def author_works(author_id):
     return result
 
 
+@app.route("/isbn/<isbn>")
+def isbn(isbn):
+    url = f"https://openlibrary.org/isbn/{isbn}.json"
+    response = requests.get(url).json()
+    return response
+
+
 if __name__ == "__main__":
     app.run(debug=True)
