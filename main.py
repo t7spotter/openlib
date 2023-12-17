@@ -1,5 +1,5 @@
 import requests
-from flask import Flask
+from flask import Flask, jsonify
 from icecream import ic
 import http
 
@@ -48,6 +48,21 @@ def author(author_id):
     }
     return result
 
+
+@app.route("/authorworks/<author_id>")
+def author_works(author_id):
+    works = requests.get(f"https://openlibrary.org/authors/{author_id}/works.json").json()
+    links = dict(works.get("links", []))
+    links_dict = {
+        "author" : links.get("author", ''),
+        "next" : links.get("next", ''), # /authors/OL23919A/works.json?offset=50"
+        "prev" : links.get("prev", ''),
+    }
+    
+    next_with_localhost = f"https://openlibrary.org{links_dict['next']}"
+    
+    
+    return next_with_localhost
 
 if __name__ == "__main__":
     app.run(debug=True)
